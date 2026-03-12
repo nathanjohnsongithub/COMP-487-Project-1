@@ -1,6 +1,6 @@
 # COMP-487-Project-1
 
-## Project Idea: Real vs AI Image-generated photos 
+## Project Idea: Real vs AI-generated photos 
 
 ## Project Division
 Nathan- 
