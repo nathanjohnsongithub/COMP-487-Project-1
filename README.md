@@ -1,26 +1,25 @@
 # COMP-487-Project-1
 
-## Project Idea:
-Real vs AI Image-generated photos 
+## Project Idea: Real vs AI Image-generated photos 
 
-##Project Division
+## Project Division
 Nathan- 
 Zubair-
 Walter- 
 
-##Project Definition
+## Project Definition
 
 
-##Dataset Link
+## Dataset Link
 
 
-##Data Preprocessing Methods
+## Data Preprocessing Methods
 
 
-##Model Architectures
+## Model Architectures
 
 
-##Training and Evaluation
+## Training and Evaluation
 
 
-##Analysis
+## Analysis
