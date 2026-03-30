@@ -4,6 +4,7 @@ The middle-tier implementations are in:
 
 - `middle_tier_model_resnet.ipynb` (baseline notebook)
 - `middle_tier_model_efficientnet.ipynb` (advanced architecture variant)
+- `middle_tier_model_resnet50.ipynb` (strong transfer-learning variant with light fine-tuning)
 
 It keeps the dataset's natural split:
 
