@@ -1,8 +1,92 @@
 # Project 1 Simple Written Report
 
-For our project, we want to test how a model detects real vs AI-generated images of landscapes from 3 different datasets. Specifically, a dataset from 10 years ago, a dataset from 2-3 years ago, and a dataset that was created within the last year. 
+For our project, we want to test how a model detects real versus AI-generated images across 3 different datasets. Specifically, we compare a dataset from about 10 years ago, a dataset from about 2-3 years ago, and a dataset created within the last year.
 
-## Mid-Tier models
+## Early-Tier Models
+
+### 1. Problem Definition
+
+For the early-tier experiments, the goal was to test how well older-style fake-versus-real image classification could be learned from a large binary dataset. This tier was meant to represent earlier AI-generated image data and to compare a strong pretrained CNN baseline against a more modern efficient architecture.
+
+### 2. Dataset Selection
+
+The early-tier models used the **CIFAKE** dataset. The dataset contains:
+
+- 100,000 training images
+- 20,000 test images
+- Two classes: `fake` and `real`
+
+Both models then used a `70/30` split of the training portion for model development:
+
+- 70,000 training images
+- 30,000 validation images
+- 20,000 test images
+
+This dataset was chosen because it directly matched the project goal of identifying whether an image is authentic or AI-generated.
+
+### 3. Preprocessing
+
+The preprocessing pipeline was the same for both early-tier models:
+
+- Resize all images to `224 x 224`
+- Convert images to tensors
+- Normalize using the ImageNet mean and standard deviation
+- Apply random horizontal flips and random rotation to reduce overfitting
+
+### 4. Model Architecture Design
+
+Two early-tier models were tested.
+
+#### Model 1: ResNet18
+
+The baseline early-tier model used **ResNet18** pretrained on ImageNet. The final fully connected layer was replaced so the network predicted only two classes instead of the original 1000 ImageNet classes.
+
+This model was chosen because ResNet18 is a standard image-classification architecture that is deep enough to learn useful visual structure while still being practical to train.
+
+#### Model 2: EfficientNet-B0
+
+The second model used **EfficientNet-B0**. It was selected because EfficientNet scales depth, width, and resolution more efficiently than many older CNN designs and is usually strong for image-classification tasks. In this notebook, the feature extractor layers were frozen to keep runtime manageable, and only the classifier head was trained.
+
+### 5. Training and Evaluation
+
+Both early-tier models used the same main training setup:
+
+- Loss function: `CrossEntropyLoss`
+- Optimizer: Adam
+- Learning rate: `1e-4`
+- Scheduler: `StepLR(step_size=3, gamma=0.1)`
+- Batch size: `64`
+- Epochs: `10`
+
+Final evaluation results were:
+
+| Model | Best Validation Accuracy | Final Validation Accuracy | Testing Accuracy |
+| --- | ---: | ---: | ---: |
+| ResNet18 | 0.9830 | 0.9829 | 0.9818 |
+| EfficientNet-B0 | 0.8725 | 0.8708 | 0.8579 |
+
+For the ResNet18 model, the classification report also showed very balanced class performance:
+
+- Fake precision: `0.98`
+- Fake recall: `0.98`
+- Fake F1-score: `0.98`
+- Real precision: `0.98`
+- Real recall: `0.98`
+- Real F1-score: `0.98`
+
+### 6. Analysis of Results
+
+The early-tier results were very strong overall. ResNet18 reached about **98.2%** test accuracy and clearly outperformed EfficientNet-B0. This suggests that the earlier dataset was easier for the model to separate into fake and real classes, or that the patterns distinguishing the classes were more visually consistent.
+
+EfficientNet-B0 still learned the task well, but it performed much worse than ResNet18. A likely reason is that its feature extractor was frozen, so the model had much less ability to adapt to the dataset than the fully trainable ResNet18 model.
+
+Another likely factor is the validation setup. The ResNet18 notebook used a cleaner validation pipeline, while the EfficientNet setup had fewer learnable components. Together, those choices made ResNet18 the stronger early-tier model.
+
+### 7. Conclusion
+
+For the early-tier portion of the project, **ResNet18** was the best model by a large margin. It achieved the highest validation and testing accuracy and showed balanced precision and recall across both classes.
+
+## Mid-Tier Models
 
 ### 1. Problem Definition
 
@@ -140,3 +224,116 @@ For these models, the test accuracy is lower than the training accuracy, which s
 ### 7. Conclusion
 
 For the mid-tier portion of the project, EfficientNetB0 was the strongest model overall, while ResNet50 ranked second and still outperformed the simple CNN baseline. The experiments demonstrate that model choice matters significantly for fake-versus-real image classification. 
+
+## Modern-Tier Models
+
+### 1. Problem Definition
+
+For the modern-tier experiments, the goal was to test stronger transfer-learning models on the project `Fake` versus `Real` classification task and see how well newer architectures performed when trained on a capped version of the dataset.
+
+### 2. Dataset Selection
+
+The modern-tier notebooks used the project dataset stored in:
+
+- `data/Dataset/Train`
+- `data/Dataset/Validation`
+- `data/Dataset/Test`
+
+Each split contains two classes:
+
+- `Fake`
+- `Real`
+
+Like the mid-tier notebooks, the modern-tier notebooks used capped samples per class to keep training practical:
+
+- Train: 6,000 per class, 12,000 total
+- Validation: 1,500 per class, 3,000 total
+- Test: 1,500 per class, 3,000 total
+
+### 3. Preprocessing
+
+The modern-tier models followed the same overall split-based workflow:
+
+- Load images from the existing folder-based `Train`, `Validation`, and `Test` splits
+- Keep the binary `Fake` and `Real` labels
+- Use a fixed random seed for reproducibility
+- Train and evaluate with the same capped sample sizes across models
+
+The ResNet-based modern models also used light data augmentation:
+
+- Random horizontal flip
+- Random rotation (`0.08`)
+- Random zoom (`0.10`)
+
+### 4. Model Architecture Design
+
+Three modern-tier models were tested.
+
+#### Model 1: EfficientNetB0
+
+This model used a pretrained **EfficientNetB0** backbone with `include_top=False`, ImageNet weights, global average pooling, dropout, and a dense softmax output layer.
+
+It had:
+
+- **4,052,133 total parameters**
+- **2,562 trainable parameters**
+
+#### Model 2: ResNet101
+
+This model used a pretrained **ResNet101** backbone with light augmentation, global average pooling, dropout, and a dense softmax output layer.
+
+It had:
+
+- **42,662,274 total parameters**
+- **4,098 trainable parameters**
+
+#### Model 3: ResNet50
+
+This model used a pretrained **ResNet50** backbone with the same light augmentation pattern, global average pooling, dropout, and a dense softmax output layer.
+
+It had:
+
+- **23,591,810 total parameters**
+- **4,098 trainable parameters**
+
+### 5. Training and Evaluation
+
+All three modern-tier models used the same general training setup:
+
+- Optimizer: Adam
+- Learning rate: `0.001`
+- Loss function: sparse categorical crossentropy
+- Batch size: `32`
+- Epochs: `5`
+
+Final evaluation results were:
+
+| Model | Training Accuracy | Validation Accuracy | Testing Accuracy |
+| --- | ---: | ---: | ---: |
+| EfficientNetB0 | 1.0000 | 0.9994 | 0.9983 |
+| ResNet101 | 0.9997 | 0.9994 | 0.9997 |
+| ResNet50 | 0.9995 | 0.9994 | 0.9987 |
+
+### 6. Analysis of Results
+
+The modern-tier models performed extremely well. All three models achieved near-perfect validation and test accuracy, which means the binary classification problem in this tier was much easier for these transfer-learning models than the mid-tier task.
+
+Among the three, **ResNet101** was the strongest overall model, with a test accuracy of **99.97%**. ResNet50 also performed extremely well at **99.87%**, while EfficientNetB0 reached **99.83%**.
+
+The differences between the models were very small, but the deeper ResNet101 had the best final performance. This suggests that on this modern-tier dataset, all three pretrained backbones extracted highly effective visual features and generalization was not a major problem.
+
+### 7. Conclusion
+
+For the modern-tier portion of the project, **ResNet101** performed best overall, although all three models reached almost perfect results. The modern-tier task appears highly learnable with pretrained CNN backbones.
+
+## Final Summary
+
+Across the full project, the results show that performance depended heavily on the dataset tier and on how difficult the fake-versus-real patterns were in each dataset.
+
+- In the **early tier**, ResNet18 was best with **98.18%** test accuracy, and the models performed very strongly overall.
+- In the **mid tier**, the task was much harder. EfficientNetB0 was best, but it only reached **68.87%** test accuracy.
+- In the **modern tier**, all three transfer-learning models were extremely strong, with ResNet101 finishing first at **99.97%** test accuracy.
+
+One important limitation is that the three tiers were not perfectly identical in content or difficulty. The early-tier dataset, mid-tier dataset, and modern-tier dataset do not appear to be equally challenging, so the raw accuracies are not a perfectly apples-to-apples comparison. Even so, the experiments still show a useful trend: model performance changes a lot depending on both the architecture and the specific fake-image generation style represented in the dataset.
+
+Overall, transfer learning was consistently helpful. The weakest results came from the small custom CNN in the mid tier, while pretrained ResNet and EfficientNet models usually performed much better. The project therefore suggests that pretrained visual backbones are the most reliable approach for fake-versus-real image classification, but dataset choice and task difficulty matter just as much as model choice.
