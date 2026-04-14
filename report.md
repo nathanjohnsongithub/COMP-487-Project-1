@@ -122,7 +122,7 @@ The full local dataset contains:
 
 To keep training practical on my computer hardware, the notebooks cap the number of images used per class to
 
-- Train: 6,000 per class, 12,000 total
+- Train: 10,000 per class, 20,000 total
 - Validation: 1,500 per class, 3,000 total
 - Test: 1,500 per class, 3,000 total
 
@@ -194,36 +194,54 @@ All three models were trained with the same general setup:
 - Batch size: `32`
 - Metric: accuracy
 
-For the **Simple CNN** and **EfficientNetB0** models, the learning rate was `0.001` and training ran for `10` epochs.
+For the **Simple CNN** and **EfficientNetB0** models, the learning rate was `0.001` and training ran for `15` epochs.
 
 For **ResNet50**, training was split into two stages:
 
 - Stage 1: `5` epochs with the backbone frozen and learning rate `0.001`
-- Stage 2: `5` additional epochs with the last 30 ResNet50 layers unfrozen and learning rate `0.00001`
+- Stage 2: `10` additional epochs with the last 30 ResNet50 layers unfrozen and learning rate `0.00001`
 
 Final evaluation results were:
 
 | Model | Training Accuracy | Validation Accuracy | Testing Accuracy |
 | --- | ---: | ---: | ---: |
-| Simple CNN | 0.6791 | 0.6503 | 0.6463 |
-| EfficientNetB0 | 0.7968 | 0.7813 | 0.6887 |
-| ResNet50 | 0.7882 | 0.7190 | 0.6673 |
+| Simple CNN | 0.8138 | 0.7470 | 0.7137 |
+| EfficientNetB0 | 0.7893 | 0.7670 | 0.6933 |
+| ResNet50 | 0.8543 | 0.7787 | 0.6803 |
 
-### 6. Analysis of Results
+### 6. Confusion Matrices and Additional Metrics
 
-The transfer learning models performed better than the simple CNN on all reported metrics. This shows that pretrained ImageNet features are useful for the real-versus-fake image detection task.
+After running the three mid-tier notebooks, I also recorded the confusion-matrix results and additional binary-classification metrics. In these notebooks, `Real` was treated as the positive class.
 
-The simple CNN reached around 64.6% test accuracy, which suggests that the task is difficult and that a small custom CNN is not strong enough to capture all of the visual patterns that distinguish real images from generated ones. Something to keep in mind is that the base value is 50% because its binary classification, so 64.6% is only mildly better
+| Model | Precision | Recall | Specificity | F1 Score | Balanced Accuracy |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Simple CNN | 0.6760 | 0.8207 | 0.6067 | 0.7413 | 0.7137 |
+| EfficientNetB0 | 0.7680 | 0.5540 | 0.8327 | 0.6437 | 0.6933 |
+| ResNet50 | 0.9068 | 0.4020 | 0.9587 | 0.5570 | 0.6803 |
 
-The ResNet50 model improved over the simple CNN and reached about 66.7% test accuracy. Its validation accuracy was also stronger than the baseline. This suggests that a deeper pretrained backbone helps, but the gain was smaller than expected given the size of the model. Even with data augmentation and a short fine-tuning stage, ResNet50 did not outperform EfficientNetB0 on this dataset. This might be because of overall task difficulty.
+The confusion matrices make the tradeoffs between the models much clearer than accuracy alone.
 
-EfficientNetB0 gave the best overall performance, reaching about 68.9% test accuracy. It also had the highest validation accuracy, which suggests that it provided the best balance between feature quality and generalization for this task. However, the test accuracy is still lower than the validation accuracy, which points to some remaining generalization issues.
+- The Simple CNN gave the best overall test accuracy at 71.37% and the best F1 score at 0.7413. Its confusion matrix was TP = 1231, TN = 910, FP = 590, and FN = 269. That means it found most of the real images well, but it also mislabeled a large number of fake images as real.
+- EfficientNetB0 was more balanced on the fake-image side. Its confusion matrix was TP = 831, TN = 1249, FP = 251, and FN = 669. It had lower recall than the Simple CNN, but much better specificity, so it was more cautious about calling an image real.
+- ResNet50 was the most conservative model. Its confusion matrix was TP = 603, TN = 1438, FP = 62, and FN = 897. This explains why it had extremely high precision (0.9068) and specificity (0.9587) but much lower recall (0.4020). In other words, when it predicted Real it was usually correct, but it missed many real images.
 
-For these models, the test accuracy is lower than the training accuracy, which suggests they perform better on the data they were trained on than on unseen images. This means the models learned useful patterns from the training set, but some of those patterns did not transfer as well to the test set. In general, this kind of drop from training to test accuracy points to limited generalization and suggests the models may be overfitting or that the test data is slightly different or more difficult than the training data.
+These metrics show that the choice of best model depends on what matters most. If the goal is strongest overall balance between precision and recall, the Simple CNN was actually the strongest mid-tier model after running the notebooks. If the goal is to avoid falsely labeling fake images as real, ResNet50 was strongest because it had the fewest false positives.
 
-### 7. Conclusion
+### 7. Analysis of Results
 
-For the mid-tier portion of the project, EfficientNetB0 was the strongest model overall, while ResNet50 ranked second and still outperformed the simple CNN baseline. The experiments demonstrate that model choice matters significantly for fake-versus-real image classification. 
+The simple CNN produced the highest test accuracy, while EfficientNetB0 placed second and ResNet50 placed third on the held-out test split.
+
+The **Simple CNN** improved the most and reached **71.37%** test accuracy. Even though it is the smallest model, it generalized better than the two transfer-learning models. Its recall for the `Real` class was also the strongest, which helped push its F1 score above the others.
+
+The **EfficientNetB0** model remained competitive and had the highest validation accuracy at **76.70%**, but its test accuracy dropped to **69.33%**. This suggests it learned useful features from the training and validation data, but those patterns did not transfer quite as well to the test set as the simple CNN.
+
+The **ResNet50** model achieved **68.03%** test accuracy. Its metrics show a very different behavior from the other two models: it was highly precise when predicting `Real`, but it failed to recover many of the real images in the test set. This made it a stricter model, but not the best balanced one overall.
+
+For all three models, training accuracy was still higher than test accuracy. That suggests the task remains difficult and that each model still struggles to generalize perfectly to unseen images. Even so, all three models stayed clearly above the 50% random baseline for a binary classification problem.
+
+### 8. Conclusion
+
+For the mid-tier portion of the project, the results show that the **Simple CNN** was the strongest overall model on the test set, followed by **EfficientNetB0**, then **ResNet50**. The confusion-matrix results also showed that these models were making different kinds of mistakes, so accuracy alone did not tell the full story. 
 
 ## Modern-Tier Models
 
