@@ -2,6 +2,10 @@
 
 For our project, we want to test how a model detects real versus AI-generated images across 3 different datasets. Specifically, we compare a dataset from about 10 years ago, a dataset from about 2-3 years ago, and a dataset created within the last year.
 
+# Presentation link
+
+https://docs.google.com/presentation/d/10-KqbGpKRMC_cuTnW5cPd6c-GulO3G73rOfHsknJU9s/edit?usp=sharing
+
 ## Early-Tier Models
 
 ### 1. Problem Definition
