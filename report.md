@@ -229,72 +229,97 @@ For the mid-tier portion of the project, EfficientNetB0 was the strongest model 
 
 ### 1. Problem Definition
 
-For the modern-tier experiments, the goal was to test stronger transfer-learning models on the project `Fake` versus `Real` classification task and see how well newer architectures performed when trained on a capped version of the dataset.
+For the modern-tier experiments, the goal was to test how well newer transfer-learning image classifiers could distinguish real images from AI-generated images produced by recent diffusion-based systems. This tier represents the newest generation of fake images in the project, so it is intended to be the most modern and visually advanced setting. We wanted to compare three strong pretrained CNN backbones and see which one performed best on this modern fake-versus-real classification task.
 
 ### 2. Dataset Selection
 
-The modern-tier notebooks used the project dataset stored in:
+For the modern-tier experiments, we used the Synthbuster dataset. This dataset contains AI-generated images from recent text-to-image systems including:
+	•	DALL·E 2
+	•	DALL·E 3
+	•	Adobe Firefly
+	•	Glide
+	•	Midjourney v5
+	•	Stable Diffusion 1.3
+	•	Stable Diffusion 1.4
+	•	Stable Diffusion 2
+	•	Stable Diffusion XL
 
-- `data/Dataset/Train`
-- `data/Dataset/Validation`
-- `data/Dataset/Test`
+The original Synthbuster release mainly contains fake/generated images, so for the real class we paired it with a separate natural image collection. The real images were taken from a natural image dataset containing categories such as airplane, car, cat, dog, flower, fruit, motorbike, and person.
 
-Each split contains two classes:
+The final local modern-tier dataset used in our experiments contained:
+	•	Fake images: 9,003
+	•	Real images: 6,899
 
-- `Fake`
-- `Real`
+These were split into:
+	•	Train: 10,923 images total
+	•	Validation: 2,341 images total
+	•	Test: 2,635 images total
 
-Like the mid-tier notebooks, the modern-tier notebooks used capped samples per class to keep training practical:
-
-- Train: 6,000 per class, 12,000 total
-- Validation: 1,500 per class, 3,000 total
-- Test: 1,500 per class, 3,000 total
+This dataset was selected because it directly matches the project goal of testing detection performance on the newest AI-generated images.
 
 ### 3. Preprocessing
 
-The modern-tier models followed the same overall split-based workflow:
+The preprocessing pipeline for the modern-tier models was:
+	•	Load images directly from folder-based train, validation, and test directories
+	•	Resize all images to 224 × 224
+	•	Convert images to RGB tensors
+	•	Use binary labels for Fake and Real
+	•	Apply light data augmentation during training:
+	  •	random horizontal flip
+	  •	random rotation
+	  •	random zoom
 
-- Load images from the existing folder-based `Train`, `Validation`, and `Test` splits
-- Keep the binary `Fake` and `Real` labels
-- Use a fixed random seed for reproducibility
-- Train and evaluate with the same capped sample sizes across models
+The dataset folders used the structure:
+	•	data/modern_dataset/Train
+	•	data/modern_dataset/Validation
+	•	data/modern_dataset/Test
 
-The ResNet-based modern models also used light data augmentation:
-
-- Random horizontal flip
-- Random rotation (`0.08`)
-- Random zoom (`0.10`)
-
+with two classes inside each split:
+	•	Fake
+	•	Real
+  
 ### 4. Model Architecture Design
 
 Three modern-tier models were tested.
 
 #### Model 1: EfficientNetB0
 
-This model used a pretrained **EfficientNetB0** backbone with `include_top=False`, ImageNet weights, global average pooling, dropout, and a dense softmax output layer.
+The first modern-tier model used EfficientNetB0 with pretrained ImageNet weights as a frozen feature extractor. The architecture was:
+	•	Input image
+	•	Data augmentation layer
+	•	EfficientNetB0 preprocessing
+	•	Frozen EfficientNetB0 backbone (include_top=False)
+	•	Global average pooling
+	•	Dropout (0.3)
+	•	Dense sigmoid output layer
 
-It had:
+This model was chosen because EfficientNetB0 is compact, efficient, and usually performs strongly on image classification tasks while keeping training practical.
 
-- **4,052,133 total parameters**
-- **2,562 trainable parameters**
+#### Model 2: ResNet50
 
-#### Model 2: ResNet101
+The second model used ResNet50 with pretrained ImageNet weights. The architecture was:
+	•	Input image
+	•	Data augmentation layer
+	•	ResNet50 preprocessing
+	•	Frozen ResNet50 backbone (include_top=False)
+	•	Global average pooling
+	•	Dropout (0.3)
+	•	Dense sigmoid output layer
 
-This model used a pretrained **ResNet101** backbone with light augmentation, global average pooling, dropout, and a dense softmax output layer.
+This model was chosen because ResNet50 is a deeper pretrained CNN that can learn stronger visual representations than smaller baselines.
 
-It had:
+#### Model 3: MobileNetV2
 
-- **42,662,274 total parameters**
-- **4,098 trainable parameters**
+The third model used MobileNetV2 with pretrained ImageNet weights. The architecture was:
+	•	Input image
+	•	Data augmentation layer
+	•	MobileNetV2 preprocessing
+	•	Frozen MobileNetV2 backbone (include_top=False)
+	•	Global average pooling
+	•	Dropout (0.3)
+	•	Dense sigmoid output layer
 
-#### Model 3: ResNet50
-
-This model used a pretrained **ResNet50** backbone with the same light augmentation pattern, global average pooling, dropout, and a dense softmax output layer.
-
-It had:
-
-- **23,591,810 total parameters**
-- **4,098 trainable parameters**
+This model was selected because MobileNetV2 is lightweight and efficient while still providing strong transfer-learning performance.
 
 ### 5. Training and Evaluation
 
@@ -305,35 +330,39 @@ All three modern-tier models used the same general training setup:
 - Loss function: sparse categorical crossentropy
 - Batch size: `32`
 - Epochs: `5`
+- Metric: accuracy
 
 Final evaluation results were:
 
-| Model | Training Accuracy | Validation Accuracy | Testing Accuracy |
-| --- | ---: | ---: | ---: |
-| EfficientNetB0 | 1.0000 | 0.9994 | 0.9983 |
-| ResNet101 | 0.9997 | 0.9994 | 0.9997 |
-| ResNet50 | 0.9995 | 0.9994 | 0.9987 |
+| Model | Testing Accuracy |
+| --- | ---: |
+| EfficientNetB0 | 0.9806 |
+| ResNet50 | 0.9856 |
+| MobileNetV2 | 0.9784 |
 
 ### 6. Analysis of Results
 
-The modern-tier models performed extremely well. All three models achieved near-perfect validation and test accuracy, which means the binary classification problem in this tier was much easier for these transfer-learning models than the mid-tier task.
+The modern-tier models performed extremely strongly overall. All three pretrained CNN backbones achieved very high test accuracy, showing that transfer learning worked very well for this dataset.
 
-Among the three, **ResNet101** was the strongest overall model, with a test accuracy of **99.97%**. ResNet50 also performed extremely well at **99.87%**, while EfficientNetB0 reached **99.83%**.
+Among the three models, **ResNet50** performed the best with about **98.56%** test accuracy. This suggests that the deeper residual architecture was able to capture the most useful visual patterns for separating real images from modern AI-generated images.
 
-The differences between the models were very small, but the deeper ResNet101 had the best final performance. This suggests that on this modern-tier dataset, all three pretrained backbones extracted highly effective visual features and generalization was not a major problem.
+**EfficientNetB0** also performed very well, reaching about **98.06%** test accuracy. Its result was only slightly below ResNet50, which shows that it remained a very strong and efficient model for this task.
+
+**MobileNetV2** had the lowest result of the three, but it still achieved about **97.84%** test accuracy, which is still excellent. This shows that even a lighter pretrained backbone can perform strongly on modern fake-versus-real image classification.
+
+Overall, the modern-tier results were much stronger than the mid-tier results and were also highly competitive with the early-tier results. This suggests that, for this particular dataset split and preprocessing setup, the modern-tier task was highly learnable with pretrained CNN backbones.
 
 ### 7. Conclusion
 
-For the modern-tier portion of the project, **ResNet101** performed best overall, although all three models reached almost perfect results. The modern-tier task appears highly learnable with pretrained CNN backbones.
+For the modern-tier portion of the project, ResNet50 performed best overall, although all three models reached very strong results. The experiments show that pretrained CNN backbones are highly effective for detecting real versus modern AI-generated images on this dataset.
 
 ## Final Summary
 
-Across the full project, the results show that performance depended heavily on the dataset tier and on how difficult the fake-versus-real patterns were in each dataset.
+Across the full project, the results showed that performance depended heavily on the dataset tier and on how difficult the fake-versus-real patterns were in each dataset.
+	•	In the **early tier**, ResNet18 performed best with **98.18%** test accuracy, and the models performed very strongly overall.
+	•	In the **mid tier**, the task was much harder. EfficientNetB0 performed best there, reaching **68.87%** test accuracy.
+	•	In the modern tier, all three transfer-learning models performed extremely well, with **ResNet50** finishing first at **98.56%** test accuracy.
 
-- In the **early tier**, ResNet18 was best with **98.18%** test accuracy, and the models performed very strongly overall.
-- In the **mid tier**, the task was much harder. EfficientNetB0 was best, but it only reached **68.87%** test accuracy.
-- In the **modern tier**, all three transfer-learning models were extremely strong, with ResNet101 finishing first at **99.97%** test accuracy.
+One important limitation is that the three tiers were not perfectly identical in content or difficulty. The early-tier, mid-tier, and modern-tier datasets do not appear to be equally challenging, so the raw accuracies are not a perfectly apples-to-apples comparison. Even so, the experiments still show a useful trend: model performance changes a lot depending on both the architecture and the type of fake-image generation represented in the dataset.
 
-One important limitation is that the three tiers were not perfectly identical in content or difficulty. The early-tier dataset, mid-tier dataset, and modern-tier dataset do not appear to be equally challenging, so the raw accuracies are not a perfectly apples-to-apples comparison. Even so, the experiments still show a useful trend: model performance changes a lot depending on both the architecture and the specific fake-image generation style represented in the dataset.
-
-Overall, transfer learning was consistently helpful. The weakest results came from the small custom CNN in the mid tier, while pretrained ResNet and EfficientNet models usually performed much better. The project therefore suggests that pretrained visual backbones are the most reliable approach for fake-versus-real image classification, but dataset choice and task difficulty matter just as much as model choice.
+Overall, transfer learning was consistently helpful. The weakest results came from the small custom CNN in the mid tier, while pretrained ResNet, EfficientNet, and MobileNet models generally performed much better. The project therefore suggests that pretrained visual backbones are a reliable approach for fake-versus-real image classification, but dataset difficulty and generation style matter just as much as model choice.
